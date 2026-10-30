@@ -2,11 +2,16 @@ package vn.edu.ptit.oop.nhom05.ui;
 
 import java.awt.BorderLayout;
 import java.awt.Font;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 
@@ -21,7 +26,9 @@ public class MainWindow extends BaseWindow {
 	// chưa chạy xong
 	private Order order;
 	private CartTableModel cartModel;
+	private JTable table; // MỚI b1: cần giữ lại để biết dòng nào đang được chọn
 	private JLabel totalLabel;
+	private int orderCounter; // MỚI b1: đếm số đơn để đặt mã HD001, HD002...
 
 	public MainWindow() {
 		super("Nhóm 05 – Coffee Shop POS", 1100, 700);
@@ -29,40 +36,75 @@ public class MainWindow extends BaseWindow {
 
 	@Override
 	protected void initUI() {
-		// Khởi tạo mọi thứ BÊN TRONG initUI()
-		order = new Order("HD001", 1);
+		orderCounter = 1;
+		order = new Order(nextOrderId(), 1);
 		cartModel = new CartTableModel(order);
+		table = new JTable(cartModel);
 
 		totalLabel = new JLabel();
 		totalLabel.setFont(totalLabel.getFont().deriveFont(Font.BOLD, 20f));
 		totalLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 		totalLabel.setBorder(new EmptyBorder(8, 8, 8, 16));
 
-		// Bảng giỏ hàng + tổng tiền nằm chung trong một panel.
-		// Không thêm totalLabel vào SOUTH của cửa sổ vì BaseWindow đã dùng SOUTH cho
-		// thanh trạng thái
 		JPanel cartPanel = new JPanel(new BorderLayout());
-		cartPanel.add(new JScrollPane(new JTable(cartModel)), BorderLayout.CENTER);
+		cartPanel.add(new JScrollPane(table), BorderLayout.CENTER);
 		cartPanel.add(totalLabel, BorderLayout.SOUTH);
 		add(cartPanel, BorderLayout.CENTER);
 
-		// Nút thử tạm thời (chưa có icon nên BaseWindow hiện chữ). Sẽ bỏ khi có
-		// MenuPanel thật
+		// Nút trên toolbar (chưa có icon nên BaseWindow hiện chữ)
 		addToolButton("/resources/icons/add.png", "+ Cà phê đen (thử)", e -> addTestItem());
+		addToolButton("/resources/icons/delete.png", "Xóa dòng đã chọn", e -> removeSelectedItem()); // MỚI b1
+
+		// MỚI b1: menu File → Đơn mới (Ctrl+N). fileMenu có sẵn từ BaseWindow, chèn lên
+		// đầu menu
+		JMenuItem newOrderItem = new JMenuItem("Đơn mới");
+		newOrderItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK));
+		newOrderItem.addActionListener(e -> newOrder());
+		fileMenu.insert(newOrderItem, 0);
+		fileMenu.insertSeparator(1);
 
 		refreshCart();
 	}
+
+	private String nextOrderId() {
+		return String.format("HD%03d", orderCounter);
+	} // MỚI b1: HD001, HD002...
 
 	private void addTestItem() {
 		order.addItem(new Drink("D01", "Cà phê đen", 20000, Drink.Size.M), 1, "");
 		refreshCart();
 	}
 
-	// Gom mọi việc "giỏ hàng vừa đổi" vào một chỗ để các nút khác sau này cũng gọi
-	// lại
+	// MỚI b1: xóa dòng đang chọn trong bảng
+	private void removeSelectedItem() {
+		int row = table.getSelectedRow(); // -1 nếu chưa chọn dòng nào
+		if (row < 0) {
+			JOptionPane.showMessageDialog(this, "Hãy chọn một dòng cần xóa", "Chưa chọn dòng",
+					JOptionPane.INFORMATION_MESSAGE);
+			return;
+		}
+		order.removeItem(table.convertRowIndexToModel(row));
+		refreshCart();
+	}
+
+	// MỚI b1: bắt đầu đơn mới (hỏi lại nếu đơn hiện tại còn món)
+	private void newOrder() {
+		if (!order.getItems().isEmpty()) {
+			int answer = JOptionPane.showConfirmDialog(this, "Bỏ đơn hiện tại và tạo đơn mới?", "Đơn mới",
+					JOptionPane.YES_NO_OPTION);
+			if (answer != JOptionPane.YES_OPTION)
+				return;
+		}
+		orderCounter++;
+		order = new Order(nextOrderId(), 1);
+		cartModel.setOrder(order);
+		refreshCart();
+	}
+
+	// Gom mọi việc "giỏ hàng vừa đổi" vào một chỗ
 	private void refreshCart() {
 		cartModel.refresh();
 		totalLabel.setText("Tổng: " + MoneyFormat.format(order.getTotal()));
-		setStatus("Giỏ hàng có " + order.getItems().size() + " dòng");
+		setStatus("Đơn " + order.getId() + " – " + order.getItems().size() + " dòng");
 	}
 }
