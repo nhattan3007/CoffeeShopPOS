@@ -202,11 +202,21 @@ public class CheckoutDialog extends JDialog {
         double cashGiven;
 
         try {
-            cashGiven = Double.parseDouble(digits);
+            // Chỉ chấp nhận số nguyên không âm, không nhận chữ hoặc ký tự lạ
+            if (!cashText.matches("\\d+")) {
+                throw new NumberFormatException();
+            }
+
+            cashGiven = Double.parseDouble(cashText);
+
+            if (!Double.isFinite(cashGiven)) {
+                throw new NumberFormatException();
+            }
+
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(
                     this,
-                    "Số tiền không hợp lệ",
+                    "Số tiền không hợp lệ! Vui lòng chỉ nhập chữ số.",
                     "Lỗi dữ liệu",
                     JOptionPane.ERROR_MESSAGE
             );

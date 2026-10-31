@@ -8,8 +8,8 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.function.IntConsumer;
 
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 public class TablePanel extends JPanel {
@@ -19,16 +19,17 @@ public class TablePanel extends JPanel {
 
     private final boolean[] occupied = new boolean[TABLE_COUNT];
 
+    // Bàn đang được chọn.
+    private int selectedTable = -1;
+
+    // Sự kiện khi người dùng chọn bàn.
+    private IntConsumer onTableSelected;
+
     public TablePanel() {
         setBackground(Color.WHITE);
         setPreferredSize(new Dimension(700, 320));
 
-        // Tạo dữ liệu mẫu: bàn 2, 5 và 8 đang được sử dụng.
-        occupied[1] = true;
-        occupied[4] = true;
-        occupied[7] = true;
-
-        // Xử lý khi nhấn vào một bàn.
+        // Cho phép chọn cả bàn trống và bàn đang phục vụ.
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -38,23 +39,54 @@ public class TablePanel extends JPanel {
                     return;
                 }
 
-                occupied[tableIndex] = !occupied[tableIndex];
+                int tableNo = tableIndex + 1;
 
+                selectedTable = tableIndex;
                 repaint();
 
-                String status = occupied[tableIndex]
-                        ? "Đang phục vụ"
-                        : "Trống";
-
-                JOptionPane.showMessageDialog(
-                        TablePanel.this,
-                        "Bàn " + (tableIndex + 1)
-                                + "\nTrạng thái: " + status,
-                        "Thông tin bàn",
-                        JOptionPane.INFORMATION_MESSAGE
-                );
+                if (onTableSelected != null) {
+                    onTableSelected.accept(tableNo);
+                }
             }
         });
+    }
+
+    /**
+     * Đăng ký sự kiện khi người dùng chọn bàn.
+     */
+    public void setOnTableSelected(IntConsumer listener) {
+        this.onTableSelected = listener;
+    }
+
+    /**
+     * Lấy số bàn đang được chọn.
+     * Trả về -1 nếu chưa chọn bàn.
+     */
+    public int getSelectedTable() {
+        return selectedTable == -1 ? -1 : selectedTable + 1;
+    }
+
+    /**
+     * Cập nhật trạng thái bàn.
+     */
+    public void setTableOccupied(int tableNo, boolean isOccupied) {
+        if (tableNo < 1 || tableNo > TABLE_COUNT) {
+            throw new IllegalArgumentException("Số bàn không hợp lệ");
+        }
+
+        occupied[tableNo - 1] = isOccupied;
+        repaint();
+    }
+
+    /**
+     * Kiểm tra bàn có đang phục vụ hay không.
+     */
+    public boolean isTableOccupied(int tableNo) {
+        if (tableNo < 1 || tableNo > TABLE_COUNT) {
+            throw new IllegalArgumentException("Số bàn không hợp lệ");
+        }
+
+        return occupied[tableNo - 1];
     }
 
     @Override
@@ -72,12 +104,15 @@ public class TablePanel extends JPanel {
             drawTitle(g2);
             drawLegend(g2);
             drawTables(g2);
+
         } finally {
             g2.dispose();
         }
     }
 
-    // Vẽ tiêu đề.
+    /**
+     * Vẽ tiêu đề.
+     */
     private void drawTitle(Graphics2D g2) {
         g2.setColor(Color.BLACK);
         g2.setFont(new Font("Arial", Font.BOLD, 22));
@@ -85,18 +120,22 @@ public class TablePanel extends JPanel {
         g2.drawString("SO DO BAN", 20, 35);
     }
 
-    // Vẽ chú thích màu sắc.
+    /**
+     * Vẽ chú thích màu sắc.
+     */
     private void drawLegend(Graphics2D g2) {
         int y = 55;
 
         g2.setFont(new Font("Arial", Font.PLAIN, 13));
 
+        // Bàn trống.
         g2.setColor(new Color(76, 175, 80));
         g2.fillRoundRect(20, y, 18, 18, 5, 5);
 
         g2.setColor(Color.BLACK);
         g2.drawString("Bàn trống", 45, y + 14);
 
+        // Bàn đang phục vụ.
         g2.setColor(new Color(244, 67, 54));
         g2.fillRoundRect(135, y, 18, 18, 5, 5);
 
@@ -104,7 +143,9 @@ public class TablePanel extends JPanel {
         g2.drawString("Đang phục vụ", 160, y + 14);
     }
 
-    // Vẽ 10 bàn bằng Graphics2D.
+    /**
+     * Vẽ 10 bàn.
+     */
     private void drawTables(Graphics2D g2) {
         int startX = 20;
         int startY = 100;
@@ -134,13 +175,23 @@ public class TablePanel extends JPanel {
                     18, 18
             );
 
-            // Vẽ viền.
+            // Vẽ viền bàn.
             g2.setColor(tableColor.darker());
             g2.drawRoundRect(
                     x, y,
                     tableWidth, tableHeight,
                     18, 18
             );
+
+            // Làm nổi bật bàn đang chọn.
+            if (selectedTable == i) {
+                g2.setColor(Color.BLUE);
+                g2.drawRoundRect(
+                        x - 3, y - 3,
+                        tableWidth + 6, tableHeight + 6,
+                        20, 20
+                );
+            }
 
             // Vẽ số bàn.
             g2.setColor(Color.WHITE);
@@ -157,10 +208,12 @@ public class TablePanel extends JPanel {
                     y + 30
             );
 
-            // Vẽ trạng thái.
+            // Vẽ trạng thái bàn.
             g2.setFont(new Font("Arial", Font.PLAIN, 12));
 
-            String status = occupied[i] ? "Đang phục vụ" : "Trống";
+            String status = occupied[i]
+                    ? "Đang phục vụ"
+                    : "Trống";
 
             int statusWidth = g2.getFontMetrics()
                     .stringWidth(status);
@@ -173,7 +226,9 @@ public class TablePanel extends JPanel {
         }
     }
 
-    // Xác định người dùng vừa nhấn vào bàn nào.
+    /**
+     * Xác định bàn được nhấn chuột.
+     */
     private int getTableAt(int mouseX, int mouseY) {
         int startX = 20;
         int startY = 100;
