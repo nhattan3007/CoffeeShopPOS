@@ -74,7 +74,8 @@ public class ChartHelper {
 	    }
 	    for (Order order : orders) {
 	        for (OrderItem it : order.getItems()) {
-	            revenue.merge(it.getMenuItem().getCategory(), it.getLineTotal(), Double::sum);
+	            revenue.merge(it.getMenuItem()
+	            		.getCategory(), it.getLineTotal(), Double::sum);// Hợp mảng hống kê loại, tổng tiền đơn món, thành tiền
 	        }
 	    }
 
@@ -100,5 +101,41 @@ public class ChartHelper {
 	            new DecimalFormat("0,0%")));
 	    return chart;
 	}
-	
+	public static JFreeChart createRevenueByHourChart(List<Order> orders) {// Tạo biểu đồ đường theo giờ
+	    final int FIRST_HOUR = 7;
+	    final int LAST_HOUR = 21;                       //lấy giờ từ 7 -> 21h
+
+	    //  Mảng doanh thu theo giờ, mặc định 0 cho giờ không có đơn
+	    double[] revenue = new double[LAST_HOUR - FIRST_HOUR + 1];
+	    for (Order order : orders) {
+	        int hour = order.getCreatedAt().getHour();//lấy giờ của hóa đơn
+	        if (hour >= FIRST_HOUR && hour <= LAST_HOUR) {
+	            revenue[hour - FIRST_HOUR] += order.getTotal();// Thống kê tổng doạnh thu trong giờ cụ thể
+	        }
+	    }
+
+	    DefaultCategoryDataset dataset = new DefaultCategoryDataset();// Đưa vào dataset theo thứ tự giờ tăng dần
+	    for (int h = FIRST_HOUR; h <= LAST_HOUR; h++) {					//lấy từ 7-21
+	        dataset.addValue(revenue[h - FIRST_HOUR], "Doanh thu", h + "h");// dataset dữ liệu từ khoảng tg này
+	    }
+
+	    JFreeChart chart = ChartFactory.createLineChart(// Biểu đồ đường
+	            "Doanh thu theo giờ",
+	            "Giờ trong ngày",
+	            "Doanh thu (VND)",
+	            dataset,
+	            PlotOrientation.VERTICAL,
+	            false,   // một series nên tắt legend
+	            true,    // tooltips
+	            false);  // urls
+
+	    // 4. Hiển thị: chấm tròn ở mỗi điểm, trục Y có dấu phân cách hàng nghìn
+	    CategoryPlot plot = chart.getCategoryPlot(); 	// Lấy vùng hiển thị dữ liệu của biểu đồ (CategoryPlot)
+	    LineAndShapeRenderer renderer = 				// Lấy bộ điều khiển cách vẽ đường và các điểm dữ liệu
+	    		(LineAndShapeRenderer) plot.getRenderer();// Ép kiểu sang LineAndShapeRenderer để sử dụng các chức năng riêng của biểu đồ đường
+	    renderer.setDefaultShapesVisible(true);			// Hiển thị hình dạng tại mỗi điểm dữ liệu (mặc định thường là các chấm nhỏ)
+	    ((NumberAxis) plot.getRangeAxis())				// Ép kiểu sang NumberAxis để có thể tùy chỉnh cách hiển thị số
+	    .setNumberFormatOverride(new DecimalFormat("#,##0"));// Định dạng lại kiểu dữ liệu
+	    return chart;
+	}
 }
