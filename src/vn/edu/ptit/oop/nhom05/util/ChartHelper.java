@@ -1,7 +1,9 @@
 package vn.edu.ptit.oop.nhom05.util;
 
 import java.awt.Font;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,9 +11,13 @@ import java.util.Map;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.StandardChartTheme;
+import org.jfree.chart.labels.StandardPieSectionLabelGenerator;
+import org.jfree.chart.plot.PiePlot;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.data.category.DefaultCategoryDataset;
+import org.jfree.data.general.DefaultPieDataset;
 
+import vn.edu.ptit.oop.nhom05.model.Category;
 import vn.edu.ptit.oop.nhom05.model.Order;
 import vn.edu.ptit.oop.nhom05.model.OrderItem;
 
@@ -43,7 +49,7 @@ public class ChartHelper {
 	    DefaultCategoryDataset dataset = new DefaultCategoryDataset();// Lấy 5 món đầu
 	    for (int i = 0; i < Math.min(5, sorted.size()); i++) {
 	        Map.Entry<String, Integer> e = sorted.get(i);
-	        dataset.addValue(e.getValue(), "Số lượng", e.getKey());
+	        dataset.addValue(e.getValue(), "Số lượng", e.getKey());//set giá trị data 
 	    }
 
 	    
@@ -56,5 +62,39 @@ public class ChartHelper {
 	            false,                  // legend: chỉ có một series nên tắt
 	            true,                   // tooltips
 	            false);                 // urls
+	}
+	public static JFreeChart createRevenueByCategoryChart(List<Order> orders) {
+	    // Cộng doanh thu theo danh mục; khởi tạo 0 cho mọi danh mục để luôn đủ lát
+	    Map<Category, Double> revenue = new EnumMap<>(Category.class);
+	    for (Category c : Category.values()) {
+	        revenue.put(c, 0.0);
+	    }
+	    for (Order order : orders) {
+	        for (OrderItem it : order.getItems()) {
+	            revenue.merge(it.getMenuItem().getCategory(), it.getLineTotal(), Double::sum);
+	        }
+	    }
+
+	    // Đưa vào dataset, khóa là nhãn hiển thị (getLabel())
+	    DefaultPieDataset<String> dataset = new DefaultPieDataset<>();
+	    for (Map.Entry<Category, Double> e : revenue.entrySet()) {
+	        dataset.setValue(e.getKey().getLabel(), e.getValue());
+	    }
+
+	    // 3. Tạo biểu đồ tròn
+	    JFreeChart chart = ChartFactory.createPieChart(
+	            "Doanh thu theo danh mục",
+	            dataset,
+	            true,    // legend
+	            true,    // tooltips
+	            false);  // urls
+
+	    // 4. Nhãn lát: "Đồ uống: 52.3%" (1 chữ số thập phân để tổng hiển thị sát 100%)
+	    PiePlot<?> plot = (PiePlot<?>) chart.getPlot();// ép kiểu sang biểu đồ tròn
+	    plot.setLabelGenerator(new StandardPieSectionLabelGenerator(
+	            "{0}: {2}",				// hiển thị Category và Sum(tổng doanh thu của loại)
+	            new DecimalFormat("#.##0"),//định dạng lại số liệu
+	            new DecimalFormat("0,0%")));
+	    return chart;
 	}
 }
