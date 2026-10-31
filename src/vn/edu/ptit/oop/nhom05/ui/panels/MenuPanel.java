@@ -7,7 +7,9 @@ import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
+import javax.swing.JOptionPane;
 
+import vn.edu.ptit.oop.nhom05.model.Drink;
 import vn.edu.ptit.oop.nhom05.model.Category;
 import vn.edu.ptit.oop.nhom05.model.MenuData;
 import vn.edu.ptit.oop.nhom05.model.MenuItem;
@@ -51,13 +53,72 @@ public class MenuPanel extends JPanel {
 
             JButton button = new JButton(buttonText);
 
-            button.addActionListener(
-                    e -> listener.onItemSelected(item)
-            );
+            button.addActionListener(e -> handleItemSelection(item));
 
             panel.add(button);
         }
 
         return panel;
+    }
+    private void handleItemSelection(MenuItem item) {
+
+        // Đồ ăn và combo không cần chọn size.
+        if (item.getCategory() != Category.DRINK) {
+            listener.onItemSelected(item);
+            return;
+        }
+
+        // Tính giá theo từng size.
+        double priceS = item.getBasePrice() * Drink.Size.S.getFactor();
+        double priceM = item.getBasePrice() * Drink.Size.M.getFactor();
+        double priceL = item.getBasePrice() * Drink.Size.L.getFactor();
+
+        String[] options = {
+                "S - " + MoneyFormat.format(priceS),
+                "M - " + MoneyFormat.format(priceM),
+                "L - " + MoneyFormat.format(priceL)
+        };
+
+        int choice = JOptionPane.showOptionDialog(
+                this,
+                "Chọn size cho " + item.getName(),
+                "Chọn size đồ uống",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[0]
+        );
+
+        // Người dùng nhấn X hoặc Hủy.
+        if (choice < 0 || choice >= options.length) {
+            return;
+        }
+
+        Drink.Size size;
+
+        switch (choice) {
+            case 0:
+                size = Drink.Size.S;
+                break;
+            case 1:
+                size = Drink.Size.M;
+                break;
+            case 2:
+                size = Drink.Size.L;
+                break;
+            default:
+                return;
+        }
+
+        // Tạo đồ uống mới với size đã chọn.
+        Drink selectedDrink = new Drink(
+                item.getCode(),
+                item.getName(),
+                item.getBasePrice(),
+                size
+        );
+
+        listener.onItemSelected(selectedDrink);
     }
 }
