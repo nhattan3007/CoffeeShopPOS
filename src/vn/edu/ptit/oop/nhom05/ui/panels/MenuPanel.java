@@ -1,16 +1,19 @@
 package vn.edu.ptit.oop.nhom05.ui.panels;
 
 import java.awt.GridLayout;
+import java.awt.Image;
+import java.net.URL;
 import java.util.List;
 
 import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
-import javax.swing.JOptionPane;
 
-import vn.edu.ptit.oop.nhom05.model.Drink;
 import vn.edu.ptit.oop.nhom05.model.Category;
+import vn.edu.ptit.oop.nhom05.model.Drink;
 import vn.edu.ptit.oop.nhom05.model.MenuData;
 import vn.edu.ptit.oop.nhom05.model.MenuItem;
 import vn.edu.ptit.oop.nhom05.util.MoneyFormat;
@@ -26,10 +29,10 @@ public class MenuPanel extends JPanel {
 
         JTabbedPane tabs = new JTabbedPane();
 
-        // Tab 1: Tất cả món
+        // Tab hiển thị tất cả món.
         tabs.addTab("Tất cả", createMenuGrid(MenuData.getAll()));
 
-        // Các tab theo danh mục
+        // Các tab theo danh mục.
         for (Category category : Category.values()) {
             tabs.addTab(
                     category.getLabel(),
@@ -45,6 +48,8 @@ public class MenuPanel extends JPanel {
         panel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
         for (MenuItem item : items) {
+
+            // Tên món và giá tiền.
             String buttonText = "<html><center>"
                     + item.getName()
                     + "<br>"
@@ -53,6 +58,25 @@ public class MenuPanel extends JPanel {
 
             JButton button = new JButton(buttonText);
 
+            // Tìm icon theo mã món trong thư mục /icons.
+            String iconPath = "/icons/" + item.getCode() + ".png";
+            URL iconUrl = getClass().getResource(iconPath);
+
+            // Nếu tìm thấy ảnh thì thu nhỏ và hiển thị.
+            // Nếu không có ảnh thì bỏ qua, không gây lỗi.
+            if (iconUrl != null) {
+                ImageIcon originalIcon = new ImageIcon(iconUrl);
+
+                Image scaledImage = originalIcon.getImage()
+                        .getScaledInstance(36, 36, Image.SCALE_SMOOTH);
+
+                button.setIcon(new ImageIcon(scaledImage));
+                button.setHorizontalTextPosition(JButton.CENTER);
+                button.setVerticalTextPosition(JButton.BOTTOM);
+                button.setIconTextGap(8);
+            }
+
+            // Giữ chức năng chọn món.
             button.addActionListener(e -> handleItemSelection(item));
 
             panel.add(button);
@@ -60,6 +84,7 @@ public class MenuPanel extends JPanel {
 
         return panel;
     }
+
     private void handleItemSelection(MenuItem item) {
 
         // Đồ ăn và combo không cần chọn size.
@@ -90,7 +115,7 @@ public class MenuPanel extends JPanel {
                 options[0]
         );
 
-        // Người dùng nhấn X hoặc Hủy.
+        // Người dùng nhấn Hủy hoặc đóng hộp thoại.
         if (choice < 0 || choice >= options.length) {
             return;
         }
