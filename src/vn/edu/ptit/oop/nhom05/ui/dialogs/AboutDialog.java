@@ -30,10 +30,10 @@ public class AboutDialog extends JDialog{
 		add(lb6);
 		
 		//Tạo nút
-		JButton b=new JButton("Đóng");
-		add(b);
+		JButton btnclose=new JButton("Đóng");
+		add(btnclose);
 		//xử lý nút
-		b.addActionListener(e->dispose());
+		btnclose.addActionListener(e->dispose());
 		//điều chỉnh nút
 		pack();
 		setLocationRelativeTo(parent);
