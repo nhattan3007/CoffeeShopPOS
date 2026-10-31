@@ -172,12 +172,28 @@ public class CheckoutDialog extends JDialog {
     private void processPayment() {
         String cashText = txtCash.getText().trim();
 
+        // Kiểm tra ô nhập tiền bị trống
         if (cashText.isEmpty()) {
             JOptionPane.showMessageDialog(
                     this,
-                    "Vui lòng nhập số tiền khách đưa.",
-                    "Thiếu thông tin",
+                    "Vui lòng nhập số tiền hợp lệ",
+                    "Lỗi dữ liệu",
                     JOptionPane.WARNING_MESSAGE
+            );
+            txtCash.requestFocus();
+            return;
+        }
+
+        // Loại bỏ các ký tự không phải chữ số
+        String digits = cashText.replaceAll("[^0-9]", "");
+
+        // Không có chữ số nào, ví dụ nhập abc
+        if (digits.isEmpty()) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Vui lòng nhập số tiền hợp lệ",
+                    "Lỗi dữ liệu",
+                    JOptionPane.ERROR_MESSAGE
             );
             txtCash.requestFocus();
             return;
@@ -186,25 +202,11 @@ public class CheckoutDialog extends JDialog {
         double cashGiven;
 
         try {
-            // Cho phép nhập 100000 hoặc 100000.0.
-            cashGiven = Double.parseDouble(
-                    cashText.replace(",", ".")
-            );
+            cashGiven = Double.parseDouble(digits);
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(
                     this,
-                    "Số tiền không hợp lệ. Vui lòng chỉ nhập số.",
-                    "Lỗi dữ liệu",
-                    JOptionPane.ERROR_MESSAGE
-            );
-            txtCash.requestFocus();
-            return;
-        }
-
-        if (!Double.isFinite(cashGiven) || cashGiven < 0) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Số tiền khách đưa phải là số không âm hợp lệ.",
+                    "Số tiền không hợp lệ",
                     "Lỗi dữ liệu",
                     JOptionPane.ERROR_MESSAGE
             );
@@ -244,7 +246,8 @@ public class CheckoutDialog extends JDialog {
         } catch (InvalidPaymentException ex) {
             JOptionPane.showMessageDialog(
                     this,
-                    "Khách đưa chưa đủ tiền.\nCòn thiếu: "
+                    ex.getMessage()
+                            + "\nCòn thiếu: "
                             + MoneyFormat.format(ex.getShortage()),
                     "Thanh toán thất bại",
                     JOptionPane.WARNING_MESSAGE

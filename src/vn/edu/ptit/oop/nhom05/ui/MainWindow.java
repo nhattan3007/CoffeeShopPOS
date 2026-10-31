@@ -4,6 +4,8 @@ import java.awt.BorderLayout;
 import java.awt.Font;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
+import java.awt.Dimension;
+
 
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
@@ -19,6 +21,7 @@ import vn.edu.ptit.oop.nhom05.common.BaseWindow;
 import vn.edu.ptit.oop.nhom05.model.Drink;
 import vn.edu.ptit.oop.nhom05.model.Order;
 import vn.edu.ptit.oop.nhom05.ui.panels.CartTableModel;
+import vn.edu.ptit.oop.nhom05.ui.panels.TablePanel;
 import vn.edu.ptit.oop.nhom05.util.MoneyFormat;
 
 public class MainWindow extends BaseWindow {
@@ -46,10 +49,20 @@ public class MainWindow extends BaseWindow {
 		totalLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 		totalLabel.setBorder(new EmptyBorder(8, 8, 8, 16));
 
-		JPanel cartPanel = new JPanel(new BorderLayout());
-		cartPanel.add(new JScrollPane(table), BorderLayout.CENTER);
-		cartPanel.add(totalLabel, BorderLayout.SOUTH);
-		add(cartPanel, BorderLayout.CENTER);
+        JPanel cartPanel = new JPanel(new BorderLayout());
+        cartPanel.add(new JScrollPane(table), BorderLayout.CENTER);
+        cartPanel.add(totalLabel, BorderLayout.SOUTH);
+
+// Khu vực sơ đồ bàn.
+        TablePanel tablePanel = new TablePanel();
+        tablePanel.setPreferredSize(new Dimension(700, 320));
+
+// Chia vùng nội dung: sơ đồ bàn bên trái, giỏ hàng bên phải.
+        JPanel mainPanel = new JPanel(new BorderLayout(10, 0));
+        mainPanel.add(tablePanel, BorderLayout.CENTER);
+        mainPanel.add(cartPanel, BorderLayout.EAST);
+
+        add(mainPanel, BorderLayout.CENTER);
 
 		// Nút trên toolbar (chưa có icon nên BaseWindow hiện chữ)
 		addToolButton("/resources/icons/add.png", "+ Cà phê đen (thử)", e -> addTestItem());

@@ -12,7 +12,10 @@ import vn.edu.ptit.oop.nhom05.model.Drink;
 import vn.edu.ptit.oop.nhom05.model.HappyHourDiscount;
 import vn.edu.ptit.oop.nhom05.model.NoDiscount;
 import vn.edu.ptit.oop.nhom05.model.Order;
+import vn.edu.ptit.oop.nhom05.model.MemberDiscount;
+import vn.edu.ptit.oop.nhom05.model.PercentDiscount;
 import vn.edu.ptit.oop.nhom05.ui.dialogs.CheckoutDialog;
+
 
 public class CheckoutDialogDemo {
 
@@ -33,9 +36,12 @@ public class CheckoutDialogDemo {
             HappyHourDiscount happyHour = new HappyHourDiscount();
             happyHour.setSimulatedTime(LocalTime.of(14, 30));
 
+
             List<DiscountStrategy> discounts = Arrays.asList(
                     new NoDiscount(),
-                    happyHour
+                    happyHour,
+                    new PercentDiscount(15),
+                    new MemberDiscount()
             );
 
             JFrame parent = new JFrame();
