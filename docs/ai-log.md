@@ -40,3 +40,13 @@
 - Kiểm thử: Kiểm tra icon của đồ uống, đồ ăn và combo; kiểm tra tên món và giá tiền không bị che; kiểm tra ứng dụng vẫn hoạt động khi không tìm thấy ảnh.
 - Kết quả: Hiển thị icon theo mã món, thu nhỏ ảnh để giao diện dễ nhìn và giữ nguyên chức năng chọn món, chọn size đồ uống.
 - File thay đổi: MenuPanel.java, các file PNG trong src/resources/icons/.
+
+## Mảnh 5 — Tạo giao diện CheckoutDialog và chọn giảm giá
+
+- Branch: feature/c-gui
+- Mục tiêu: Tạo cửa sổ thanh toán, hiển thị tiền tạm tính, tiền giảm giá và tổng thanh toán.
+- AI hỗ trợ: Hướng dẫn xây dựng giao diện Java Swing bằng JDialog, JComboBox và JLabel; tích hợp Order, DiscountStrategy, NoDiscount và HappyHourDiscount.
+- Xử lý: Hiển thị danh sách chương trình giảm giá; cập nhật tiền tạm tính, tiền giảm và tổng thanh toán khi thay đổi chương trình.
+- Kiểm thử: Tạo đơn hàng gồm 2 ly cà phê sữa size L, giá gốc 25.000 đ/ly. Kiểm tra không khuyến mãi cho tổng tiền 70.000 đ và Happy Hour lúc 14:30 cho tiền giảm 14.000 đ, tổng thanh toán 56.000 đ.
+- Kết quả: Giao diện thanh toán và chức năng chọn chương trình giảm giá hoạt động đúng theo kết quả kiểm thử.
+- File thay đổi: CheckoutDialog.java, CheckoutDialogDemo.java, docs/ai-log.md.
