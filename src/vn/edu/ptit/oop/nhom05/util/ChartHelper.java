@@ -98,7 +98,7 @@ public class ChartHelper {
 	    plot.setLabelGenerator(new StandardPieSectionLabelGenerator(
 	            "{0}: {2}",				// hiển thị Category và Sum(tổng doanh thu của loại)
 	            new DecimalFormat("#,##0"),//định dạng lại số liệu
-	            new DecimalFormat("0,0%")));
+	            new DecimalFormat("0.0%")));
 	    return chart;
 	}
 	public static JFreeChart createRevenueByHourChart(List<Order> orders) {// Tạo biểu đồ đường theo giờ

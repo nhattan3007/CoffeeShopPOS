@@ -20,21 +20,33 @@ public class ChartDemo {
         ChartHelper.applyVietnameseFont();// Thiết lập font trước khi tạo biểu đồ
         List<Order> orders = SampleData.createOrders();// Tạo dữ liệu mẫu
         for (Order order : orders) {
-        	for (OrderItem it : order.getItems()) {
-		    // Gọi các phương thức lấy dữ liệu (getter) từ đối tượng Order và OrderItem
-		    String orderId = order.getId();
-		    String itemName = it.getMenuItem().getName();
-		    LocalDateTime orderDate = order.getCreatedAt(); 
-		    int quantity = it.getQuantity();
-	        
-		    System.out.println(// In số lượng đơn hàng để kiểm tra
-		            orderId + " | " +
-		            itemName + " | " +
-		            quantity + " | " +
-		            orderDate.format(DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy")
-		            )
-		        );
-        	}
+
+            // In thông tin hóa đơn (chỉ in một lần)
+            String orderId = order.getId();
+            LocalDateTime orderDate = order.getCreatedAt();
+
+            System.out.println(
+                orderId + " | " +
+                orderDate.format(DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy"))+
+                " | Tổng tiền: " + order.getTotal()
+            );
+
+            // Duyệt danh sách sản phẩm trong hóa đơn
+            for (OrderItem it : order.getItems()) {
+
+                // Lấy thông tin sản phẩm
+                String itemName = it.getMenuItem().getName();
+                int quantity = it.getQuantity();
+
+                // In thông tin từng sản phẩm
+                System.out.println(
+                    "    Sản phẩm: " + itemName +
+                    " | Số lượng: " + quantity
+                );
+            }
+
+            
+            System.out.println("--------------------------------");
 
 		}
 
