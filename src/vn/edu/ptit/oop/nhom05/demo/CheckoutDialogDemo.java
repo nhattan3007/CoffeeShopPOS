@@ -19,10 +19,8 @@ public class CheckoutDialogDemo {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
 
-            // Tạo đơn hàng mẫu.
             Order order = new Order("DEMO001", 1);
 
-            // Thêm 2 ly cà phê sữa size L.
             Drink coffee = new Drink(
                     "D01",
                     "Cà phê sữa",
@@ -30,9 +28,8 @@ public class CheckoutDialogDemo {
                     Drink.Size.L
             );
 
-            order.addItem(coffee, 2, "");
+            order.addItem(coffee, 2, "Ít đá");
 
-            // Tạo các chương trình giảm giá.
             HappyHourDiscount happyHour = new HappyHourDiscount();
             happyHour.setSimulatedTime(LocalTime.of(14, 30));
 
@@ -41,9 +38,7 @@ public class CheckoutDialogDemo {
                     happyHour
             );
 
-            // Mở cửa sổ thanh toán.
             JFrame parent = new JFrame();
-            parent.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
             CheckoutDialog dialog = new CheckoutDialog(
                     parent,
@@ -52,6 +47,8 @@ public class CheckoutDialogDemo {
             );
 
             dialog.setVisible(true);
+
+            System.out.println("Đã thanh toán: " + dialog.isPaid());
 
             parent.dispose();
         });
