@@ -11,9 +11,12 @@ import java.util.Map;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.StandardChartTheme;
+import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.labels.StandardPieSectionLabelGenerator;
+import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.plot.PiePlot;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.renderer.category.LineAndShapeRenderer;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.general.DefaultPieDataset;
 
@@ -29,7 +32,7 @@ public class ChartHelper {
 		theme.setRegularFont(new Font("Segoe UI", Font.PLAIN, 12)); // chú giải, giá trị
 		ChartFactory.setChartTheme(theme); // gọi MỘT lần trong main(), trước khi tạo biểu đồ
 	}
-	public static JFreeChart createTopItemsChart(List<Order> orders) {
+	public static JFreeChart createTopItemsChart(List<Order> orders) {// tạo biểu đồ cột theo món ăn
 	    // 1. Cộng số lượng theo tên gốc (getName), không có size -> các size gộp chung một món
 	    Map<String, Integer> qtyByName = new HashMap<>();// set cập key-value cho món ăn và số lượng
 	    for (Order order : orders) {
@@ -63,7 +66,7 @@ public class ChartHelper {
 	            true,                   // tooltips
 	            false);                 // urls
 	}
-	public static JFreeChart createRevenueByCategoryChart(List<Order> orders) {
+	public static JFreeChart createRevenueByCategoryChart(List<Order> orders) {// Tạo biểu đồ tròn theo loại hàng
 	    // Cộng doanh thu theo danh mục; khởi tạo 0 cho mọi danh mục để luôn đủ lát
 	    Map<Category, Double> revenue = new EnumMap<>(Category.class);
 	    for (Category c : Category.values()) {
@@ -93,8 +96,9 @@ public class ChartHelper {
 	    PiePlot<?> plot = (PiePlot<?>) chart.getPlot();// ép kiểu sang biểu đồ tròn
 	    plot.setLabelGenerator(new StandardPieSectionLabelGenerator(
 	            "{0}: {2}",				// hiển thị Category và Sum(tổng doanh thu của loại)
-	            new DecimalFormat("#.##0"),//định dạng lại số liệu
+	            new DecimalFormat("#,##0"),//định dạng lại số liệu
 	            new DecimalFormat("0,0%")));
 	    return chart;
 	}
+	
 }
