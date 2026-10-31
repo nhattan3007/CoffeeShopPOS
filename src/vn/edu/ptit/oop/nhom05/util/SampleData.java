@@ -74,7 +74,7 @@ public class SampleData {
 	}
 
 	private static void payOrder(Order order) {
-		double cash = Math.ceil(order.getTotal() / 10_000) * 10_000;// Khách đưa tiền làm tròn lên 10.000đ
+		double cash = Math.ceil(order.getTotal() / 10000) * 10000;// Khách đưa tiền làm tròn lên 10.000đ
 	    try {
 	        order.pay(cash);
 	    } catch (EmptyOrderException | InvalidPaymentException e) {// bọc exception checked thành RuntimeException.
