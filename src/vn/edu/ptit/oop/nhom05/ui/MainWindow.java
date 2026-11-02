@@ -1,17 +1,21 @@
 package vn.edu.ptit.oop.nhom05.ui;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.time.LocalTime;
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import javax.swing.JButton;
 import javax.swing.JCheckBoxMenuItem;
-import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -23,211 +27,424 @@ import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 
 import vn.edu.ptit.oop.nhom05.common.BaseWindow;
-import vn.edu.ptit.oop.nhom05.exception.EmptyOrderException;
-import vn.edu.ptit.oop.nhom05.exception.InvalidPaymentException;
 import vn.edu.ptit.oop.nhom05.model.DiscountStrategy;
-import vn.edu.ptit.oop.nhom05.model.Drink;
 import vn.edu.ptit.oop.nhom05.model.HappyHourDiscount;
 import vn.edu.ptit.oop.nhom05.model.MemberDiscount;
+import vn.edu.ptit.oop.nhom05.model.MenuItem;
 import vn.edu.ptit.oop.nhom05.model.NoDiscount;
 import vn.edu.ptit.oop.nhom05.model.Order;
+import vn.edu.ptit.oop.nhom05.model.OrderStatus;
 import vn.edu.ptit.oop.nhom05.model.PercentDiscount;
+import vn.edu.ptit.oop.nhom05.repository.SalesRepository;
+import vn.edu.ptit.oop.nhom05.ui.dialogs.AboutDialog;
+import vn.edu.ptit.oop.nhom05.ui.dialogs.CheckoutDialog;
 import vn.edu.ptit.oop.nhom05.ui.panels.CartTableModel;
+import vn.edu.ptit.oop.nhom05.ui.panels.MenuPanel;
+import vn.edu.ptit.oop.nhom05.ui.panels.TablePanel;
 import vn.edu.ptit.oop.nhom05.util.MoneyFormat;
+import vn.edu.ptit.oop.nhom05.util.SampleData;
 
 public class MainWindow extends BaseWindow {
-	// KHÔNG viết "= new ..." ở đây: BaseWindow gọi initUI() khi constructor này
-	// chưa chạy xong
+
 	private Order order;
 	private CartTableModel cartModel;
 	private JTable table;
-	private JLabel subtotalLabel;
-	private JLabel discountLabel;
 	private JLabel totalLabel;
-	private JComboBox<DiscountStrategy> discountCombo; // MỚI b2
-	private HappyHourDiscount happyHour; // MỚI b2: MỘT đối tượng dùng chung
-	private List<Order> paidOrders; // MỚI b3: tạm giữ đơn đã trả tiền
+
 	private int orderCounter;
 
+	/*
+	 * Không khởi tạo HashMap tại đây. BaseWindow gọi initUI() từ constructor của
+	 * lớp cha, trước khi các thuộc tính của MainWindow được khởi tạo.
+	 */
+	private Map<Integer, Order> ordersByTable;
+
+	private TablePanel tablePanel;
+	// KHÔNG viết "= -1" ở đây: field initializer chạy SAU initUI() (BaseWindow gọi
+	// initUI() trong constructor cha)
+	// nên sẽ ghi đè lại giá trị initUI() vừa đặt. Giá trị khởi tạo được đặt trong
+	// initUI().
+	private int selectedTableNo;
+
+	// MỚI: MỘT đối tượng Happy Hour dùng chung cho menu giả lập giờ và hộp thanh
+	// toán
+	private HappyHourDiscount happyHour;
+	// MỚI: kho các đơn ĐÃ thanh toán, cung cấp dữ liệu cho Báo cáo và Biểu đồ
+	private SalesRepository salesRepo;
+
 	public MainWindow() {
-		super("Nhóm 05 – Coffee Shop POS", 1100, 700);
+		super("Nhóm 05 - Coffee Shop POS", 1100, 700);
 	}
 
 	@Override
 	protected void initUI() {
-		// Khởi tạo mọi thứ BÊN TRONG initUI()
-		orderCounter = 1;
-		paidOrders = new ArrayList<>();
+
+		// Phải khởi tạo trước khi sử dụng ordersByTable.
+		ordersByTable = new HashMap<>();
 		happyHour = new HappyHourDiscount();
-		order = new Order(nextOrderId(), 1);
+		salesRepo = new SalesRepository();
+
+		// Nạp sẵn đơn mẫu đã thanh toán để Báo cáo và Biểu đồ có dữ liệu ngay khi demo.
+		List<Order> sampleOrders = SampleData.createOrders();
+		for (Order sample : sampleOrders) {
+			salesRepo.add(sample);
+		}
+		// Đơn thật bắt đầu sau mã đơn mẫu, không trùng mã.
+		orderCounter = sampleOrders.size();
+
+		// Tạo sơ đồ bàn.
+		tablePanel = new TablePanel();
+
+		// Tạo đơn ban đầu cho bàn 1.
+		order = createOrder(1);
+		ordersByTable.put(1, order);
+		selectedTableNo = 1;
+
+		// Khởi tạo bảng hóa đơn.
 		cartModel = new CartTableModel(order);
 		table = new JTable(cartModel);
 
-		// ----- MỚI b2: hộp chọn khuyến mãi -----
-		// JComboBox hiện tên mỗi mục bằng toString(), mà mỗi lớp giảm giá đã viết
-		// toString() = getName()
-		discountCombo = new JComboBox<>();
-		discountCombo.addItem(new NoDiscount());
-		discountCombo.addItem(new PercentDiscount(15));
-		discountCombo.addItem(new MemberDiscount());
-		discountCombo.addItem(happyHour);
-		// Gắn listener SAU KHI addItem: nếu gắn trước, việc thêm mục đầu tiên cũng bắn
-		// sự kiện
-		discountCombo.addActionListener(e -> onDiscountChanged());
-
-		// ----- Khu vực tổng tiền: 3 dòng canh phải -----
-		subtotalLabel = new JLabel();
-		discountLabel = new JLabel();
+		// Nhãn tổng tiền.
 		totalLabel = new JLabel();
 		totalLabel.setFont(totalLabel.getFont().deriveFont(Font.BOLD, 20f));
-		subtotalLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-		discountLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 		totalLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+		totalLabel.setBorder(new EmptyBorder(8, 8, 8, 16));
 
-		JPanel figures = new JPanel(new GridLayout(3, 1));
-		figures.add(subtotalLabel);
-		figures.add(discountLabel);
-		figures.add(totalLabel);
-
-		JPanel discountPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-		discountPanel.add(new JLabel("Khuyến mãi:"));
-		discountPanel.add(discountCombo);
-
-		JPanel summary = new JPanel(new BorderLayout());
-		summary.setBorder(new EmptyBorder(8, 8, 8, 16));
-		summary.add(discountPanel, BorderLayout.WEST);
-		summary.add(figures, BorderLayout.EAST);
-
-		// Bảng + khu tổng tiền chung một panel (SOUTH của cửa sổ đã dành cho thanh
-		// trạng thái)
-		JPanel cartPanel = new JPanel(new BorderLayout());
+		// Khu vực hóa đơn.
+		JPanel cartPanel = new JPanel(new BorderLayout(5, 5));
 		cartPanel.add(new JScrollPane(table), BorderLayout.CENTER);
-		cartPanel.add(summary, BorderLayout.SOUTH);
-		add(cartPanel, BorderLayout.CENTER);
 
-		// ----- Toolbar -----
-		addToolButton("/resources/icons/add.png", "+ Cà phê đen (thử)", e -> addTestItem());
+		// Khu vực thanh toán.
+		JPanel checkoutPanel = new JPanel(new BorderLayout(5, 5));
+		checkoutPanel.add(totalLabel, BorderLayout.NORTH);
+
+		JButton btnCheckout = new JButton("THANH TOÁN");
+		btnCheckout.setFont(btnCheckout.getFont().deriveFont(Font.BOLD, 16f));
+		btnCheckout.setForeground(Color.WHITE);
+		btnCheckout.setBackground(new Color(40, 167, 69));
+		btnCheckout.setOpaque(true);
+		btnCheckout.setBorderPainted(false);
+		btnCheckout.setFocusPainted(false);
+		btnCheckout.setPreferredSize(new Dimension(180, 45));
+		btnCheckout.addActionListener(e -> openCheckout());
+
+		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+		buttonPanel.add(btnCheckout);
+
+		checkoutPanel.add(buttonPanel, BorderLayout.SOUTH);
+		cartPanel.add(checkoutPanel, BorderLayout.SOUTH);
+
+		// Xử lý chọn bàn.
+		tablePanel.setOnTableSelected(this::selectTable);
+
+		// Khu vực chính.
+		JPanel centerPanel = new JPanel(new BorderLayout(10, 10));
+		centerPanel.add(tablePanel, BorderLayout.NORTH);
+
+		// Chia giao diện thành menu và hóa đơn.
+		JPanel contentPanel = new JPanel(new GridLayout(1, 2, 10, 10));
+
+		MenuPanel menuPanel = new MenuPanel(this::handleMenuItemSelected);
+
+		contentPanel.add(menuPanel);
+		contentPanel.add(cartPanel);
+
+		centerPanel.add(contentPanel, BorderLayout.CENTER);
+		add(centerPanel, BorderLayout.CENTER);
+
+		// Nút xóa món đã chọn.
 		addToolButton("/resources/icons/delete.png", "Xóa dòng đã chọn", e -> removeSelectedItem());
-		addToolButton("/resources/icons/pay.png", "Thanh toán", e -> checkout()); // MỚI b3
 
-		// ----- Menu File → Đơn mới (Ctrl+N) -----
+		// MỚI: nút Báo cáo và Biểu đồ trên toolbar.
+		addToolButton("/resources/icons/report.png", "Báo cáo", e -> openReport());
+		addToolButton("/resources/icons/chart.png", "Biểu đồ", e -> openCharts());
+
+		// Menu tạo đơn mới.
 		JMenuItem newOrderItem = new JMenuItem("Đơn mới");
 		newOrderItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK));
 		newOrderItem.addActionListener(e -> newOrder());
+
 		fileMenu.insert(newOrderItem, 0);
 		fileMenu.insertSeparator(1);
 
-		// ----- MỚI b2: menu View → Giả lập giờ Happy Hour -----
+		// MỚI: View -> giả lập giờ Happy Hour (để demo buổi sáng vẫn thấy giảm giá).
 		final JCheckBoxMenuItem simulateItem = new JCheckBoxMenuItem("Giả lập giờ Happy Hour (14:30)");
 		simulateItem.addActionListener(e -> {
 			happyHour.setSimulatedTime(simulateItem.isSelected() ? LocalTime.of(14, 30) : null);
-			refreshCart();
 			setStatus(simulateItem.isSelected() ? "Đang giả lập giờ 14:30" : "Đã tắt giả lập giờ");
 		});
 		viewMenu.add(simulateItem);
 
 		refreshCart();
+		setStatus("Đang chọn bàn 1");
 	}
 
-	private String nextOrderId() {
-		return String.format("HD%03d", orderCounter);
+	/**
+	 * Tạo đơn hàng mới.
+	 */
+	private Order createOrder(int tableNo) {
+		orderCounter++;
+
+		String orderId = String.format("HD%03d", orderCounter);
+
+		return new Order(orderId, tableNo);
 	}
 
-	// MỚI b2: lấy khuyến mãi đang chọn (getItemAt trả đúng kiểu DiscountStrategy,
-	// không cần ép kiểu)
-	private DiscountStrategy getSelectedDiscount() {
-		return discountCombo.getItemAt(discountCombo.getSelectedIndex());
-	}
+	/**
+	 * Chuyển sang bàn được chọn.
+	 */
+	private void selectTable(int tableNo) {
 
-	// MỚI b2: đổi khuyến mãi => đơn tính lại, không có if/else theo loại khuyến mãi
-	private void onDiscountChanged() {
-		order.setDiscount(getSelectedDiscount());
+		Order selectedOrder = ordersByTable.get(tableNo);
+
+		// Nếu bàn đã có đơn, mở lại đơn cũ.
+		if (selectedOrder != null) {
+
+			if (selectedOrder.getStatus() != OrderStatus.OPEN) {
+				JOptionPane.showMessageDialog(this, "Đơn hàng của bàn này đã thanh toán.", "Thông báo",
+						JOptionPane.INFORMATION_MESSAGE);
+				return;
+			}
+
+			order = selectedOrder;
+			selectedTableNo = tableNo;
+
+			cartModel.setOrder(order);
+			refreshCart();
+
+			setStatus("Đang xem hóa đơn bàn " + tableNo);
+			return;
+		}
+
+		// Bàn đang bận nhưng không có đơn trong hệ thống.
+		if (tablePanel.isTableOccupied(tableNo)) {
+			JOptionPane.showMessageDialog(this,
+					"Bàn " + tableNo + " đang phục vụ nhưng chưa có hóa đơn trong hệ thống.", "Bàn đang bận",
+					JOptionPane.WARNING_MESSAGE);
+			return;
+		}
+
+		// Bàn trống: tạo đơn mới.
+		order = createOrder(tableNo);
+		ordersByTable.put(tableNo, order);
+		selectedTableNo = tableNo;
+
+		cartModel.setOrder(order);
 		refreshCart();
+
+		setStatus("Đã tạo đơn mới cho bàn " + tableNo);
 	}
 
-	private void addTestItem() {
-		order.addItem(new Drink("D01", "Cà phê đen", 20000, Drink.Size.M), 1, "");
-		refreshCart();
+	/**
+	 * Thêm món vào đơn hàng của bàn đang chọn.
+	 */
+	private void handleMenuItemSelected(MenuItem item) {
+
+		if (order == null || selectedTableNo < 1) {
+			JOptionPane.showMessageDialog(this, "Vui lòng chọn bàn trước khi gọi món.", "Chưa chọn bàn",
+					JOptionPane.WARNING_MESSAGE);
+			return;
+		}
+
+		if (order.getStatus() != OrderStatus.OPEN) {
+			JOptionPane.showMessageDialog(this, "Đơn hàng đã thanh toán.", "Thông báo", JOptionPane.WARNING_MESSAGE);
+			return;
+		}
+
+		try {
+			order.addItem(item, 1, "");
+
+			ordersByTable.put(order.getTableNo(), order);
+
+			// Đánh dấu bàn đang phục vụ khi có món.
+			if (!order.getItems().isEmpty()) {
+				tablePanel.setTableOccupied(order.getTableNo(), true);
+			}
+
+			refreshCart();
+
+			setStatus("Đã thêm " + item.getName() + " vào bàn " + order.getTableNo());
+
+		} catch (IllegalStateException ex) {
+			JOptionPane.showMessageDialog(this, "Không thể thêm món vào đơn hàng.", "Thông báo",
+					JOptionPane.WARNING_MESSAGE);
+		}
 	}
 
+	/**
+	 * Xóa món đang chọn trong bảng.
+	 */
 	private void removeSelectedItem() {
-		int row = table.getSelectedRow();
-		if (row < 0) {
-			JOptionPane.showMessageDialog(this, "Hãy chọn một dòng cần xóa", "Chưa chọn dòng",
+
+		if (order == null) {
+			return;
+		}
+
+		if (order.getStatus() != OrderStatus.OPEN) {
+			JOptionPane.showMessageDialog(this, "Đơn hàng đã thanh toán, không thể xóa món.", "Thông báo",
+					JOptionPane.WARNING_MESSAGE);
+			return;
+		}
+
+		int selectedRow = table.getSelectedRow();
+
+		if (selectedRow < 0) {
+			JOptionPane.showMessageDialog(this, "Vui lòng chọn món cần xóa.", "Chưa chọn món",
 					JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
-		order.removeItem(table.convertRowIndexToModel(row));
-		refreshCart();
-	}
-
-	// File → Đơn mới: hỏi xác nhận nếu đơn hiện tại còn món
-	private void newOrder() {
-		if (!order.getItems().isEmpty()) {
-			int answer = JOptionPane.showConfirmDialog(this, "Bỏ đơn hiện tại và tạo đơn mới?", "Đơn mới",
-					JOptionPane.YES_NO_OPTION);
-			if (answer != JOptionPane.YES_OPTION)
-				return;
-		}
-		startNewOrder();
-	}
-
-	// MỚI b3: tách riêng việc "chuyển sang đơn mới" để cả newOrder() và checkout()
-	// dùng chung
-	private void startNewOrder() {
-		orderCounter++;
-		order = new Order(nextOrderId(), 1);
-		order.setDiscount(getSelectedDiscount()); // giữ lựa chọn khuyến mãi đang hiện trên hộp
-		cartModel.setOrder(order);
-		refreshCart();
-	}
-
-	// MỚI b3: thanh toán tạm bằng JOptionPane (CheckoutDialog của C xong sẽ thay
-	// vào đây)
-	private void checkout() {
-		if (order.getItems().isEmpty()) {
-			JOptionPane.showMessageDialog(this, "Giỏ hàng đang trống", "Không thể thanh toán",
-					JOptionPane.WARNING_MESSAGE);
-			return;
-		}
-		String input = JOptionPane.showInputDialog(this,
-				"Phải trả: " + MoneyFormat.format(order.getTotal()) + "\nNhập tiền khách đưa (VND):", "Thanh toán",
-				JOptionPane.QUESTION_MESSAGE);
-		if (input == null)
-			return; // bấm Cancel
-
-		// Bỏ mọi ký tự không phải số (dấu chấm, chữ "đ"...); giới hạn 10 chữ số để
-		// không tràn số
-		String digits = input.replaceAll("[^0-9]", "");
-		if (digits.isEmpty() || digits.length() > 10) {
-			JOptionPane.showMessageDialog(this, "Vui lòng nhập số tiền hợp lệ", "Sai dữ liệu",
-					JOptionPane.WARNING_MESSAGE);
-			return;
-		}
-		double cash = Long.parseLong(digits);
 
 		try {
-			double change = order.pay(cash);
-			String message = "Thanh toán thành công!\nPhải trả: " + MoneyFormat.format(order.getTotal())
-					+ "\nKhách đưa: " + MoneyFormat.format(cash) + "\nTiền thối: " + MoneyFormat.format(change);
-			paidOrders.add(order); // giữ lại để làm báo cáo sau này
-			startNewOrder();
-			setStatus("Đã thanh toán – tổng đã bán " + paidOrders.size() + " đơn");
-			JOptionPane.showMessageDialog(this, message, "Hóa đơn", JOptionPane.INFORMATION_MESSAGE);
-		} catch (EmptyOrderException e) {
-			JOptionPane.showMessageDialog(this, e.getMessage(), "Không thể thanh toán", JOptionPane.WARNING_MESSAGE);
-		} catch (InvalidPaymentException e) {
-			JOptionPane.showMessageDialog(this, e.getMessage() + "\nCòn thiếu: " + MoneyFormat.format(e.getShortage()),
-					"Chưa đủ tiền", JOptionPane.WARNING_MESSAGE);
+			int modelRow = table.convertRowIndexToModel(selectedRow);
+
+			order.removeItem(modelRow);
+
+			// Nếu không còn món, giải phóng bàn.
+			if (order.getItems().isEmpty()) {
+				tablePanel.setTableOccupied(order.getTableNo(), false);
+			}
+
+			refreshCart();
+
+		} catch (IllegalStateException ex) {
+			JOptionPane.showMessageDialog(this, "Không thể xóa món.", "Thông báo", JOptionPane.WARNING_MESSAGE);
 		}
 	}
 
-	// Gom mọi việc "giỏ hàng vừa đổi" vào một chỗ
+	/**
+	 * Tạo đơn mới cho bàn đang chọn.
+	 */
+	private void newOrder() {
+
+		if (selectedTableNo < 1) {
+			JOptionPane.showMessageDialog(this, "Vui lòng chọn bàn trước.", "Chưa chọn bàn",
+					JOptionPane.WARNING_MESSAGE);
+			return;
+		}
+
+		Order existingOrder = ordersByTable.get(selectedTableNo);
+
+		// Nếu bàn đã có đơn mở, mở lại đơn đó.
+		if (existingOrder != null && existingOrder.getStatus() == OrderStatus.OPEN) {
+
+			order = existingOrder;
+			cartModel.setOrder(order);
+			refreshCart();
+
+			JOptionPane.showMessageDialog(this, "Bàn " + selectedTableNo + " đã có đơn. Đã mở lại hóa đơn hiện tại.",
+					"Thông báo", JOptionPane.INFORMATION_MESSAGE);
+			return;
+		}
+
+		if (tablePanel.isTableOccupied(selectedTableNo)) {
+			JOptionPane.showMessageDialog(this, "Bàn này đang phục vụ khách khác.", "Bàn đang bận",
+					JOptionPane.WARNING_MESSAGE);
+			return;
+		}
+
+		order = createOrder(selectedTableNo);
+		ordersByTable.put(selectedTableNo, order);
+
+		cartModel.setOrder(order);
+		refreshCart();
+
+		setStatus("Đã tạo đơn mới cho bàn " + selectedTableNo);
+	}
+
+	/**
+	 * Mở cửa sổ thanh toán.
+	 */
+	private void openCheckout() {
+
+		if (order == null || order.getItems().isEmpty()) {
+			JOptionPane.showMessageDialog(this, "Vui lòng thêm món trước khi thanh toán.", "Giỏ hàng trống",
+					JOptionPane.WARNING_MESSAGE);
+			return;
+		}
+
+		if (order.getStatus() != OrderStatus.OPEN) {
+			JOptionPane.showMessageDialog(this, "Đơn hàng đã được thanh toán.", "Thông báo",
+					JOptionPane.INFORMATION_MESSAGE);
+			return;
+		}
+
+		List<DiscountStrategy> discounts = Arrays.asList(new NoDiscount(), new MemberDiscount(),
+				new PercentDiscount(10), happyHour);
+
+		// Giữ tham chiếu đến đơn đang thanh toán.
+		Order paidOrder = order;
+
+		CheckoutDialog dialog = new CheckoutDialog(this, paidOrder, discounts);
+
+		dialog.setVisible(true);
+
+		if (!dialog.isPaid()) {
+			return;
+		}
+
+		// MỚI: lưu đơn đã thanh toán vào kho để Báo cáo và Biểu đồ thấy.
+		salesRepo.add(paidOrder);
+
+		int paidTableNo = paidOrder.getTableNo();
+		String paidOrderId = paidOrder.getId();
+
+		// Xóa đơn đã thanh toán.
+		ordersByTable.remove(paidTableNo);
+
+		// Giải phóng bàn.
+		tablePanel.setTableOccupied(paidTableNo, false);
+
+		JOptionPane.showMessageDialog(this, "Đơn hàng " + paidOrderId + " đã thanh toán thành công!");
+
+		/*
+		 * Tạo đơn rỗng chỉ để bảng hóa đơn không hiển thị món cũ. Không đưa đơn rỗng
+		 * này vào ordersByTable.
+		 */
+		order = createOrder(paidTableNo);
+		selectedTableNo = -1;
+
+		cartModel.setOrder(order);
+		refreshCart();
+
+		setStatus("Bàn " + paidTableNo + " đã thanh toán. Vui lòng chọn bàn tiếp theo.");
+	}
+
+	/**
+	 * MỚI: Help -> About mở AboutDialog (ghi đè phương thức của BaseWindow, đa
+	 * hình).
+	 */
+	@Override
+	protected void showAbout() {
+		new AboutDialog(this).setVisible(true);
+	}
+
+	/**
+	 * MỚI: mở cửa sổ báo cáo theo ngày.
+	 */
+	private void openReport() {
+		new ReportWindow(salesRepo).setVisible(true);
+	}
+
+	/**
+	 * MỚI: mở cửa sổ 3 biểu đồ.
+	 */
+	private void openCharts() {
+		new ChartWindow(salesRepo.findAll()).setVisible(true);
+	}
+
+	/**
+	 * Cập nhật bảng hóa đơn và tổng tiền.
+	 */
 	private void refreshCart() {
+
+		if (cartModel == null || order == null || totalLabel == null) {
+			return;
+		}
+
 		cartModel.refresh();
-		subtotalLabel.setText("Tạm tính: " + MoneyFormat.format(order.getSubtotal()));
-		discountLabel.setText("Giảm giá: " + MoneyFormat.format(order.getDiscountAmount()));
-		totalLabel.setText("Phải trả: " + MoneyFormat.format(order.getTotal()));
-		setStatus("Đơn " + order.getId() + " – " + order.getItems().size() + " dòng");
+
+		totalLabel.setText("Tổng: " + MoneyFormat.format(order.getTotal()));
+
+		setStatus("Đơn " + order.getId() + " - Bàn " + order.getTableNo() + " - " + order.getItems().size() + " dòng");
 	}
 }
