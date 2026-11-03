@@ -9,8 +9,8 @@ Bài tập lớn môn Lập trình hướng đối tượng – PTIT.
 |---|---|---|---|
 | 1 | Tân (nhóm trưởng) | N24DVCN042 | A – Tích hợp, MainWindow · B – Model |
 | 2 | Nguyễn Đức Nhật | N24DVCN033 | C – Giao diện (MenuPanel, CheckoutDialog, TablePanel) |
-| 3 | <Tên> | N24DVCN039 | D – Dữ liệu, biểu đồ (ChartHelper, SampleData) |
-| 4 | <Tên> | N24DVCN014  | Hỗ trợ – AboutDialog, SalesRepository |
+| 3 | Nguyễn Minh Sơn | N24DVCN039 | D – Dữ liệu, biểu đồ (ChartHelper, SampleData) |
+| 4 | Hà Tuấn Đạt | N24DVCN014  | Hỗ trợ – AboutDialog, SalesRepository |
 
 ## Tính năng
 
