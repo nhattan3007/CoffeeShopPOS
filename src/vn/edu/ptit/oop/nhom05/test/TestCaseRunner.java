@@ -1,5 +1,5 @@
-// ===== demo/TestCaseRunner.java =====
-package vn.edu.ptit.oop.nhom05.demo;
+// ===== test/TestCaseRunner.java =====
+package vn.edu.ptit.oop.nhom05.test;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
