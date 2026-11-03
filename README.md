@@ -18,7 +18,7 @@ Bài tập lớn môn Lập trình hướng đối tượng – PTIT.
 - 4 chiến lược giảm giá: không giảm, thành viên, giảm theo %, Happy Hour (14:00–16:00, giảm 20% đồ uống).
 - Thanh toán tiền mặt, tính tiền thối, báo lỗi khi nhập sai hoặc thiếu tiền.
 - Báo cáo đơn đã thanh toán theo ngày.
-- Biểu đồ: doanh thu theo ngày, doanh thu theo giờ, top món bán chạy.
+- Biểu đồ: top món bán chạy (cột), doanh thu theo loại hàng (tròn), doanh thu theo giờ (đường).
 - Menu File/View/Help, toolbar, status bar, hộp thoại About.
 
 ## Cấu trúc mã nguồn
@@ -29,7 +29,7 @@ src/vn/edu/ptit/oop/nhom05/
 ├── exception/ EmptyOrderException, InvalidPaymentException
 ├── repository/ SalesRepository
 ├── util/ MoneyFormat, ChartHelper, SampleData
-├── ui/ BaseWindow, MainWindow, ReportWindow, ChartWindow
+├── ui/MainWindow, ReportWindow, ChartWindow
 │ ├── panels/ MenuPanel, TablePanel, CartTableModel, OrderTableModel
 │ └── dialogs/ CheckoutDialog, AboutDialog
 └── test/ TestCaseRunner
